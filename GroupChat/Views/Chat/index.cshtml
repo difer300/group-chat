@@ -1,0 +1,188 @@
+﻿@using GroupChat.Settings
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Chat</title>
+    <link rel="stylesheet" href="@Url.Content("~/Content/Chat.css")">
+</head>
+<body>
+    <div>
+        <div class="row">
+            <div class="col-xs-12 col-md-3">
+                <aside>
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <div class="panel panel-default groups_bar">
+                                <div class="panel-heading groups_heading">
+                                    <h4>Groups (@ViewBag.allGroups.Count)</h4>
+                                </div>
+                                <div class="panel-body groups_body">
+                                    <ul id="groups" class="list-group">
+                                        @foreach (var group in @ViewBag.allGroups)
+                                        {
+                                            <a class="group_item group-@group.ID" href="#" data-group-id="@group.ID" data-group-name="@group.Name">
+                                                <li>
+                                                    <div class="avatar">
+                                                        <img src="@Url.Content("~/Content/no_avatar.png")">
+                                                    </div>
+                                                    <span>@group.Name</span>
+                                                </li>
+                                            </a>
+                                        }
+                                    </ul>
+                                </div>
+                                <div>
+                                    <button class="btn btn-primary btn-logout" id="logout">Log Out</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+            <div>
+                <div class="col-xs-12 col-md-9 chat_body">
+                    <div class="row">
+                        <div class="col-xs-12 ">
+                            <ul class="list-group chat_main"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-md-9">
+                    <div class="chat_send_message">
+                        <textarea class="form-control chat_send_message_text_area" id="msg_box" placeholder="Type your message" cols="10"></textarea>
+                        <button class="btn btn-primary chat_send_message_button" id="sendMessage">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    <script src="https://js.pusher.com/4.0/pusher.min.js"></script>
+    <script>
+    //Initialize Pusher
+    var pusher = new Pusher("@AppSettings.AppKey", {
+        cluster: "@AppSettings.Cluster"
+    });
+
+    //Variables
+    let newMessageTpl =
+        `<div>
+            <div id="msg-{{id}}" class="row _chat_par__">
+                <div class="_chat_">
+                <h4><b>{{user}}</b></h4>
+                <p>{{body}}</p>
+                </div>
+            </div>
+            </div>`;
+    let currentGroupChannel = null;
+    let groupChannelName = null;
+    let currentGroup = null;
+    let socketId = null;
+
+    //Events
+    $('.group_item').click( function(e) {
+        e.preventDefault();
+        currentGroup = {
+            id: $(this).data('group-id'),
+            name: $(this).data('group-name'),
+        };
+
+        if (groupChannelName) {
+            pusher.unsubscribe(groupChannelName);
+        }
+
+        groupChannelName = 'private-' + currentGroup.id;
+        currentGroupChannel = pusher.subscribe(groupChannelName);
+        bind_client_events();
+
+        $('#groups').find('li').removeClass('active');
+        $('#groups .group-' + currentGroup.id).find('li').addClass('active');
+        getChat(currentGroup.id);
+    });
+
+    $('#sendMessage').click(function () {
+        $.post("/messages/send", {
+            message: $('#msg_box').val(),
+            contact: currentGroup.ID,
+            socket_id: pusher.connection.socket_id
+        }).done(function (msg) {
+            if (!msg.IsBoot) {
+                displayMessage(msg);
+            }
+            else
+            {
+                displayMessageBot(msg);
+            }
+            $('#msg_box').val('');
+        });
+    });
+
+    $('#logout').click(function () {
+        $.post("/logout")
+            .done(function (data) {
+                window.location.href = data.redirectToUrl;
+            });
+    });
+
+    //Functions
+    function getChat(groupId) {
+        $.get("/group/messages/" + groupId)
+            .done(function(resp) {
+                let chatData = resp.data || [];
+                $('.chat_main').empty();
+                loadChat(chatData);
+            });
+    }
+
+    function loadChat(chatData) {
+        chatData.forEach(function(data) {
+            displayMessage(data);
+        });
+
+        $('.chat_body').show();
+    }
+
+    function displayMessage(message_obj) {
+        const msg_id = message_obj.ID;
+        const msg_body = message_obj.Text;
+        const msg_user = message_obj.AddedBy.Name;
+        let template = $(newMessageTpl).html();
+        template = template.replace("{{id}}", msg_id);
+        template = template.replace("{{body}}", msg_body);
+        template = template.replace("{{user}}", msg_user);
+        template = $(template);
+        if (message_obj.AddedBy.ID !== @ViewBag.currentUser.ID) {
+            template.find('._chat_').addClass('from_chat');
+        } else {
+            template.find('._chat_').addClass('receive_chat');
+        }
+        if (message_obj.status === 1) {
+            template.find('.delivery-status').show();
+        }
+        $('.chat_main').append(template);
+        $('.chat_body').animate({ scrollTop: $('.chat_body').prop("scrollHeight") }, 500);
+    }
+
+    function displayMessageBot() {
+        $.post("/mq/receive")
+            .done(function (msg) {
+                displayMessage(msg);
+            });
+    }
+
+    function bind_client_events(){
+        currentGroupChannel.bind("new_message", function (msg) {
+            if (!msg.IsBoot && msg.AddedBy.ID !== @ViewBag.currentUser.ID) {
+                displayMessage(msg);
+            }
+            else
+            {
+                displayMessageBot(msg);
+            }
+        });
+    }
+    </script>
+</body>
+</html>

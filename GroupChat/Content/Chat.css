@@ -1,0 +1,99 @@
+﻿.groups_bar {
+    background-color: #f2f2f2;
+    height: 400px;
+}
+
+    .groups_bar .panel-heading.groups_heading {
+        padding: 15px 15px;
+        border-top-right-radius: 0px;
+        border-top-left-radius: 0px;
+        background-color: #000;
+        color: #fff;
+    }
+
+    .groups_bar .panel-body.groups_body {
+        padding: 0px;
+        height: 70%;
+    }
+
+        .groups_bar .panel-body.groups_body .group_item {
+            text-decoration: none;
+        }
+
+            .groups_bar .panel-body.groups_body .group_item span {
+                color: #000;
+                font-weight: 600;
+                left: 7px;
+                position: relative;
+            }
+
+            .groups_bar .panel-body.groups_body .group_item li {
+                position: relative;
+                display: block;
+                padding: 10px 10px;
+                margin-bottom: -1px;
+                background-color: #e6e6e6;
+                border: 1px solid #ddd;
+            }
+
+                .groups_bar .panel-body.groups_body .group_item li.active {
+                    background-color: #5198d56e;
+                }
+
+            .groups_bar .panel-body.groups_body .group_item .avatar {
+                display: inline-block;
+            }
+
+                .groups_bar .panel-body.groups_body .group_item .avatar img {
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                }
+
+.btn-logout {
+    margin-left: 30%;
+}
+
+
+
+.chat_body {
+    position: relative;
+    background-color: #f2f2f2;
+    height: 350px;
+    overflow-y: scroll;
+}
+
+    .chat_body .chat_main ._chat_ {
+        padding: 15px 15px;
+        border-radius: 20px;
+        margin: 20px 20px 0px 20px;
+        width: 65%;
+    }
+
+        .chat_body .chat_main ._chat_.from_chat {
+            background-color: #d9d9d9;
+        }
+
+        .chat_body .chat_main ._chat_.receive_chat {
+            background-color: #4d9aff;
+            float: right;
+            color: #fff;
+        }
+
+.chat_send_message {
+    margin-top: 7px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+    .chat_send_message .chat_send_message_text_area {
+        height: 40px;
+        resize: none;
+        max-width: 100%;
+        order: 1;
+    }
+
+    .chat_send_message .chat_send_message_button {
+        order: 2;
+        margin-left: 5px;
+    }
