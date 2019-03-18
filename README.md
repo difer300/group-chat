@@ -17,6 +17,14 @@ Users can post commands to the chatroom with the following format /stock=APPL, a
 * A decoupled bot will get the CSV information from the external API at https://stooq.com/q/l/?s=aapl.us&f=sd2t2ohlcv&h&e=csv. 
 * The response from the external API must be posted back into the chatroom with the following format: “APPL quote is $93.42 per share”. 
 * The post owner will be the bot. 
+
+## Solution
+The solution include two steps: 
+* The first window show the login option. In this part an existing user can join with a username, in the case that the username doesn't exits it will be create automatically 
+![Alt text](https://raw.githubusercontent.com/difer300/group-chat/master/Login.JPG?raw=true "Title")
+
+* The second window include the chat option. At the left will be include all the existing groups, to join in any of them just click and the chat will be load. The chat windows will show all the messages of the differnts users organice by created date. 
+![Alt text](https://raw.githubusercontent.com/difer300/group-chat/master/Chat.JPG?raw=true "Title")
  
 ## Built With
 
@@ -28,7 +36,7 @@ Users can post commands to the chatroom with the following format /stock=APPL, a
 
 ## Authors
 
-* **[Diego Navarro** - hhttps://github.com/difer300
+* **[Diego Navarro** - https://github.com/difer300
 
 ## License
 
