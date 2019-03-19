@@ -11,23 +11,22 @@ namespace GroupChat.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly GroupChatContext _db = new GroupChatContext();
-        private readonly Pusher _pusher;
-        private readonly Session _session = new Session();
+        private readonly IGroupChatContext _db;
+        private readonly Session _session;
+        private IPusher _pusher;
 
         public AuthController()
         {
-            var options = new PusherOptions
-            {
-                Cluster = AppSettings.Cluster,
-                Encrypted = true
-            };
+            _db = new GroupChatContext();
+            _session = new Session();
+            InitPusher();
+        }
 
-            _pusher = new Pusher(
-                AppSettings.AppId,
-                AppSettings.AppKey,
-                AppSettings.AppSecret,
-                options);
+        public AuthController(IGroupChatContext context, IPusher pusher)
+        {
+            _db = context;
+            _session = new Session();
+            _pusher = pusher;
         }
 
         public ActionResult Index()
@@ -44,7 +43,11 @@ namespace GroupChat.Controllers
         {
             if (_session.CurrentUser == null)
             {
-                return Json(new { status = HttpStatusCode.BadRequest, message = ErrorMessages.UserNotLogged });
+                return Json(new ErrorMessage
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ErrorMessages.UserNotLogged
+                });
             }
 
             int groupId;
@@ -60,9 +63,13 @@ namespace GroupChat.Controllers
             var isInChannel = _db.UserGroups.Count(gb => gb.GroupId == groupId
                                                          && gb.UserId == _session.CurrentUser.ID);
 
-            if (isInChannel <= 0) return Json(new { Content = ErrorMessages.ForbiddenError });
-            var auth = _pusher.Authenticate(channel_name, socket_id);
+            if (isInChannel <= 0) return Json(new ErrorMessage
+            {
+                Status = HttpStatusCode.BadRequest,
+                Message = ErrorMessages.ForbiddenError
+            });
 
+            var auth = _pusher.Authenticate(channel_name, socket_id);
             return Json(auth);
         }
 
@@ -70,17 +77,12 @@ namespace GroupChat.Controllers
         public ActionResult Login()
         {
             var userName = Request.Form["username"];
-            if (userName.Trim() == "")
+            if (userName == null || userName.Trim() == "")
             {
                 return Redirect("/");
             }
 
-            var user = _db.Users.FirstOrDefault(u => u.Name == userName);
-            if (user == null)
-            {
-                user = CreateNewUser(userName);
-            }
-
+            var user = _db.Users.FirstOrDefault(u => u.Name == userName) ?? CreateNewUser(userName);
             _session.CurrentUser = user;
 
             return Redirect($"/Chat");
@@ -91,6 +93,21 @@ namespace GroupChat.Controllers
         {
             _session.CurrentUser = null;
             return Json(new { redirectToUrl = Url.Action("Index", "Auth") });
+        }
+
+        private void InitPusher()
+        {
+            var options = new PusherOptions
+            {
+                Cluster = AppSettings.Cluster,
+                Encrypted = true
+            };
+
+            _pusher = new Pusher(
+                AppSettings.AppId,
+                AppSettings.AppKey,
+                AppSettings.AppSecret,
+                options);
         }
 
         private User CreateNewUser(string userName)

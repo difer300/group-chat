@@ -20,23 +20,22 @@ namespace GroupChat.Controllers
 {
     public class ChatController : Controller
     {
-        private readonly GroupChatContext _db = new GroupChatContext();
-        private readonly Pusher _pusher;
-        private readonly Session _session = new Session();
+        private readonly IGroupChatContext _db;
+        private readonly Session _session;
+        private IPusher _pusher;
 
         public ChatController()
         {
-            var options = new PusherOptions
-            {
-                Cluster = AppSettings.Cluster,
-                Encrypted = true
-            };
+            _db = new GroupChatContext();
+            _session = new Session();
+            InitPusher();
+        }
 
-            _pusher = new Pusher(
-                AppSettings.AppId,
-                AppSettings.AppKey,
-                AppSettings.AppSecret,
-                options);
+        public ChatController(IGroupChatContext context, IPusher pusher)
+        {
+            _db = context;
+            _session = new Session();
+            _pusher = pusher;
         }
 
         public ActionResult Index()
@@ -86,7 +85,11 @@ namespace GroupChat.Controllers
         {
             if (_session.CurrentUser == null)
             {
-                return Json(new { status = HttpStatusCode.BadRequest, message = ErrorMessages.UserNotLogged });
+                return Json(new ErrorMessage
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ErrorMessages.UserNotLogged
+                });
             }
 
             Message message;
@@ -190,6 +193,21 @@ namespace GroupChat.Controllers
             }
 
             return string.Format(AppSettings.BotMessage, price);
+        }
+
+        private void InitPusher()
+        {
+            var options = new PusherOptions
+            {
+                Cluster = AppSettings.Cluster,
+                Encrypted = true
+            };
+
+            _pusher = new Pusher(
+                AppSettings.AppId,
+                AppSettings.AppKey,
+                AppSettings.AppSecret,
+                options);
         }
     }
 }
